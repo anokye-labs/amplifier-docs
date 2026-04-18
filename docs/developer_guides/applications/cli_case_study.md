@@ -157,37 +157,54 @@ tools:
 
 ```python
 from amplifier_core import AmplifierSession
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
 
 @dataclass
 class SessionConfig:
-    """Configuration for creating a session."""
-    mount_plan: dict
-    session_id: str | None = None
-    parent_id: str | None = None
-    is_resumed: bool = False
+    """All parameters needed to create and initialize a session."""
+    # Required configuration
+    config: dict
+    search_paths: list[Path]
+    verbose: bool
 
-async def create_initialized_session(config: SessionConfig) -> AmplifierSession:
-    """Create and initialize a session."""
-    
-    # Create session
-    session = AmplifierSession(
-        config=config.mount_plan,
-        session_id=config.session_id,
-        parent_id=config.parent_id,
-        is_resumed=config.is_resumed,
-    )
-    
-    # Mount module source resolver (app responsibility)
-    resolver = SimpleSourceResolver(
-        cache_dir=Path.home() / ".amplifier" / "modules"
-    )
-    await session.coordinator.mount("source-resolver", resolver)
-    
-    # Initialize (loads orchestrator, context, providers, tools, hooks)
-    await session.initialize()
-    
-    return session
+    # Session identity
+    session_id: str | None = None  # None = generate new UUID
+    bundle_name: str = "unknown"
+
+    # Resume mode (if provided, this is a resume)
+    initial_transcript: list[dict] | None = None
+
+    # Bundle mode
+    prepared_bundle: Any = None
+
+    # Execution mode
+    output_format: str = "text"  # text | json | json-trace
+
+    @property
+    def is_resume(self) -> bool:
+        return self.initial_transcript is not None
+
+
+@dataclass
+class InitializedSession:
+    """Result of session initialization - ready for execution."""
+    session: AmplifierSession
+    session_id: str
+    config: SessionConfig
+
+
+async def create_initialized_session(
+    config: SessionConfig,
+    console: "Console",
+) -> InitializedSession:
+    """Create and fully initialize a session.
+
+    Handles provider auto-install, bundle-mode session creation,
+    new vs resume sessions, and canonical capability registration.
+    """
+    # ... (see session_runner.py for full implementation)
 ```
 
 ### 5. Display Layer

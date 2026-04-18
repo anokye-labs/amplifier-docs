@@ -129,20 +129,22 @@ amplifier session cleanup [OPTIONS]
 | Option | Description |
 |--------|-------------|
 | `--days` | Delete sessions older than N days (default: 30) |
-| `--dry-run` | Show what would be deleted without deleting |
 
-### `session export`
+### `session delete`
 
-Export a session transcript.
+Delete a specific session.
 
 ```bash
-amplifier session export SESSION_ID [OPTIONS]
+amplifier session delete SESSION_ID
 ```
 
-| Option | Description |
-|--------|-------------|
-| `--format` | Export format: `json`, `markdown` (default: json) |
-| `--output, -o` | Output file path |
+### `session fork`
+
+Fork a session at a specific turn.
+
+```bash
+amplifier session fork SESSION_ID [OPTIONS]
+```
 
 ## Configuration
 
@@ -168,12 +170,14 @@ amplifier bundle SUBCOMMAND [OPTIONS]
 
 **Subcommands:**
 
+- `current` - Show active bundle
 - `list` - List registered bundles
 - `show BUNDLE` - Show bundle details
 - `use BUNDLE` - Set active bundle for this project
 - `add URI` - Register a new bundle
 - `remove BUNDLE` - Unregister a bundle
 - `update BUNDLE` - Update bundle to latest version
+- `clear` - Reset to default bundle
 
 **Examples:**
 
@@ -201,10 +205,14 @@ amplifier provider SUBCOMMAND [OPTIONS]
 
 **Subcommands:**
 
-- `list` - List available providers
-- `show PROVIDER` - Show provider details
-- `use PROVIDER` - Set active provider for this project
-- `add URI` - Register a new provider module
+- `add [NAME]` - Add / configure a provider
+- `list` - List configured providers
+- `remove NAME` - Remove a provider
+- `edit NAME` - Edit a provider configuration
+- `test [NAME]` - Test provider connectivity
+- `manage` - Interactive provider dashboard
+- `install` - Install canonical provider modules
+- `models` - Show available provider models
 
 **Examples:**
 
@@ -212,39 +220,11 @@ amplifier provider SUBCOMMAND [OPTIONS]
 # List providers
 amplifier provider list
 
-# Show provider details
-amplifier provider show anthropic
+# Add / configure a provider
+amplifier provider add anthropic
 
-# Set active provider
-amplifier provider use openai
-```
-
-### `config`
-
-Manage configuration settings.
-
-```bash
-amplifier config SUBCOMMAND KEY [VALUE]
-```
-
-**Subcommands:**
-
-- `get KEY` - Get a configuration value
-- `set KEY VALUE` - Set a configuration value
-- `unset KEY` - Remove a configuration value
-- `list` - List all configuration values
-
-**Examples:**
-
-```bash
-# Get a value
-amplifier config get bundle.active
-
-# Set a value
-amplifier config set bundle.active dev
-
-# List all config
-amplifier config list
+# Test provider connectivity
+amplifier provider test anthropic
 ```
 
 ## Module Management
@@ -294,48 +274,22 @@ amplifier source SUBCOMMAND [OPTIONS]
 
 ## Agent Management
 
-### `agent`
+### `agents`
 
 Manage agents.
 
 ```bash
-amplifier agent SUBCOMMAND [OPTIONS]
+amplifier agents SUBCOMMAND [OPTIONS]
 ```
 
 **Subcommands:**
 
-- `list` - List available agents
+- `list` - List available agents (from the active bundle)
 - `show AGENT` - Show agent details
+- `dirs` - Show legacy agent directories
 
-## Mode Management
-
-### `mode`
-
-Manage runtime modes.
-
-```bash
-amplifier mode SUBCOMMAND [OPTIONS]
-```
-
-**Subcommands:**
-
-- `list` - List available modes
-- `current` - Show active mode
-- `set MODE` - Activate a mode
-- `clear` - Deactivate current mode
-
-**Examples:**
-
-```bash
-# List modes
-amplifier mode list
-
-# Activate a mode
-amplifier mode set brainstorm-mode
-
-# Clear active mode
-amplifier mode clear
-```
+Agents are defined within bundles and invoked from within a session (for example
+using `@agent-name` in interactive mode).
 
 ## Interactive Mode Commands
 
@@ -343,17 +297,21 @@ When running in interactive mode (`amplifier` or `amplifier run --mode chat`), t
 
 | Command | Description |
 |---------|-------------|
-| `/help` | Show help |
-| `/exit`, `/quit` | Exit interactive mode |
-| `/clear` | Clear the screen |
-| `/history` | Show conversation history |
-| `/session` | Show current session info |
-| `/bundle` | Show current bundle |
-| `/provider` | Show current provider |
-| `/model` | Show current model |
+| `/help` | Show available commands |
+| `/mode` | Set or toggle a mode (e.g., `/mode plan`) |
+| `/modes` | List available modes |
+| `/save` | Save conversation transcript |
+| `/status` | Show session status |
+| `/clear` | Clear conversation context |
+| `/config` | Live session config — `/config [category] [disable|enable name]` |
+| `/tools` | List available tools |
 | `/agents` | List available agents |
 | `/allowed-dirs` | Manage allowed write directories |
 | `/denied-dirs` | Manage denied write directories |
+| `/rename` | Rename current session |
+| `/fork` | Fork session at turn N: `/fork [turn]` |
+| `/skills` | List available skills |
+| `/skill` | Load a skill (e.g., `/skill simplify`) |
 | `@AGENT prompt` | Invoke a named agent |
 
 **Examples:**

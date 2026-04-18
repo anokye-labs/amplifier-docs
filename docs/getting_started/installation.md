@@ -85,36 +85,35 @@ source ~/.bashrc  # or ~/.zshrc for zsh
 
 ```bash
 export ANTHROPIC_API_KEY="your-key"
-amplifier provider use anthropic
+amplifier provider add anthropic
 ```
 
 ### OpenAI
 
 ```bash
 export OPENAI_API_KEY="your-key"
-amplifier provider use openai
+amplifier provider add openai
 ```
 
 ### Azure OpenAI
 
 ```bash
 export AZURE_OPENAI_API_KEY="your-key"
-export AZURE_OPENAI_ENDPOINT="https://your-resource.openai.azure.com"
-amplifier provider use azure-openai
+amplifier provider add azure-openai
 ```
 
 ### Google Gemini
 
 ```bash
 export GOOGLE_API_KEY="your-key"
-amplifier provider use google
+amplifier provider add google
 ```
 
 ### Ollama (Local)
 
 ```bash
 # No API key needed
-amplifier provider use ollama
+amplifier provider add ollama
 ```
 
 ## Verifying Installation

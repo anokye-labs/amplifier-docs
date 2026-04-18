@@ -75,7 +75,7 @@ Tools provide capabilities to agents.
 
 ### Tool Contract
 
-**Protocol definition**: `amplifier_core/interfaces.py` lines 121-146
+**Protocol definition**: `amplifier_core/interfaces.py` → `class Tool(Protocol)`
 
 ```python
 from amplifier_core.interfaces import Tool
@@ -86,16 +86,33 @@ from typing import runtime_checkable, Protocol, Any
 class Tool(Protocol):
     @property
     def name(self) -> str:
-        """Unique identifier."""
+        """Tool name for invocation."""
         ...
 
     @property
     def description(self) -> str:
-        """Human-readable description."""
+        """Human-readable tool description."""
         ...
 
+    @property
+    def input_schema(self) -> dict[str, Any]:
+        """JSON Schema describing the tool's input parameters.
+
+        Returns an empty dict by default for backward compatibility
+        with tools that predate this convention.
+        """
+        return {}
+
     async def execute(self, input: dict[str, Any]) -> ToolResult:
-        """Execute the tool with input data."""
+        """
+        Execute tool with given input.
+
+        Args:
+            input: Tool-specific input parameters
+
+        Returns:
+            Tool execution result
+        """
         ...
 ```
 
@@ -192,7 +209,7 @@ Providers integrate LLM APIs.
 
 ### Provider Contract
 
-**Protocol definition**: `amplifier_core/interfaces.py` lines 54-119
+**Protocol definition**: `amplifier_core/interfaces.py` → `class Provider(Protocol)`
 
 **Detailed specification**: See [PROVIDER_SPECIFICATION.md](https://github.com/microsoft/amplifier-core/blob/main/docs/specs/PROVIDER_SPECIFICATION.md) for complete implementation guidance including:
 - Content block preservation requirements
@@ -326,7 +343,7 @@ Hooks intercept events for observability and modification.
 
 ### Hook Contract
 
-**Protocol definition**: `amplifier_core/interfaces.py` lines 205-220
+**Protocol definition**: `amplifier_core/interfaces.py` → `class HookHandler(Protocol)`
 
 **Detailed API reference**: See [HOOKS_API.md](https://github.com/microsoft/amplifier-core/blob/main/docs/HOOKS_API.md) for complete documentation including:
 - HookResult actions and fields

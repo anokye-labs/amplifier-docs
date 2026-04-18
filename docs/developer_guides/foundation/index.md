@@ -277,7 +277,7 @@ See [amplifier-foundation documentation](amplifier_foundation/) for complete API
 
 **Prerequisites**:
 - Rust 1.70+ (for kernel development)
-- Python 3.10+
+- Python 3.11+
 - maturin (for building Python bindings)
 
 **Development setup**:
@@ -330,11 +330,11 @@ amplifier-core/
 ```
 amplifier-foundation/
 ├── amplifier_foundation/      # Library code
-│   ├── bundle.py              # Bundle composition
+│   ├── bundle/                # Bundle composition
 │   ├── registry.py            # Bundle loading
 │   ├── validator.py           # Bundle validation
 │   ├── mentions/              # @mention resolution
-│   └── utils/                 # Utilities
+│   └── (io, dicts, paths, cache, ...)  # Utilities
 ├── docs/
 │   ├── BUNDLE_GUIDE.md        # Bundle authoring
 │   ├── AGENT_AUTHORING.md     # Agent creation

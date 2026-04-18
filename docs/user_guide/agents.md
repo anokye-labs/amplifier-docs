@@ -42,13 +42,13 @@ amplifier> @zen-architect Design a caching system
 ### List Available Agents
 
 ```bash
-amplifier agents list
+amplifier agent list
 ```
 
 ### Show Agent Details
 
 ```bash
-amplifier agents show explorer
+amplifier agent show explorer
 ```
 
 ## How Agents Work
@@ -282,7 +282,7 @@ amplifier agents list
 
 - Check for name collisions in search paths
 - More specific agents in higher-priority paths override bundled agents
-- Use `amplifier agents show <name>` to verify which agent will be used
+- Use `amplifier agent show <name>` to verify which agent will be used
 
 ## Advanced: Agent Composition
 

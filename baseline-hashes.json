@@ -29,7 +29,7 @@
           "repo": "amplifier-app-cli",
           "path": "pyproject.toml",
           "exists": true,
-          "hash": "c1d8c929c11aada9"
+          "hash": "a7a3924405234b4a"
         }
       ]
     },
@@ -80,7 +80,7 @@
           "repo": "amplifier-app-cli",
           "path": "amplifier_app_cli/main.py",
           "exists": true,
-          "hash": "f85376256aea0098"
+          "hash": "504c9ef12c44b99c"
         },
         {
           "repo": "amplifier-app-cli",
@@ -103,7 +103,7 @@
           "repo": "amplifier-foundation",
           "path": "agents/foundation-expert.md",
           "exists": true,
-          "hash": "89b15cfb7095297d"
+          "hash": "451597d60994e4da"
         },
         {
           "repo": "amplifier-foundation",
@@ -149,7 +149,7 @@
           "repo": "amplifier-core",
           "path": "docs/DESIGN_PHILOSOPHY.md",
           "exists": true,
-          "hash": "09f95174e27a37fc"
+          "hash": "dc8aad2f7a2e6e44"
         },
         {
           "repo": "amplifier-foundation",
@@ -446,7 +446,7 @@
           "repo": "amplifier-app-cli",
           "path": "amplifier_app_cli/main.py",
           "exists": true,
-          "hash": "f85376256aea0098"
+          "hash": "504c9ef12c44b99c"
         },
         {
           "repo": "amplifier-app-cli",
@@ -480,19 +480,19 @@
           "repo": "amplifier-core",
           "path": "docs/contracts/TOOL_CONTRACT.md",
           "exists": true,
-          "hash": "6427f074050d6cbb"
+          "hash": "2424c7437780ac60"
         },
         {
           "repo": "amplifier-core",
           "path": "docs/contracts/PROVIDER_CONTRACT.md",
           "exists": true,
-          "hash": "18298f59c21023e5"
+          "hash": "dbf2a14f597e80f1"
         },
         {
           "repo": "amplifier-core",
           "path": "docs/contracts/HOOK_CONTRACT.md",
           "exists": true,
-          "hash": "dadff5a067eaa063"
+          "hash": "486411549b12904a"
         }
       ]
     },

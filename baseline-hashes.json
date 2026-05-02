@@ -79,12 +79,14 @@
         {
           "repo": "amplifier-app-cli",
           "path": "amplifier_app_cli/main.py",
+          "type": "python",
           "exists": true,
-          "hash": "f85376256aea0098"
+          "hash": "504c9ef12c44b99c"
         },
         {
           "repo": "amplifier-app-cli",
           "path": "amplifier_app_cli/commands/__init__.py",
+          "type": "python",
           "exists": true,
           "hash": "4d3e0a9b3d8f0315"
         }
@@ -445,12 +447,14 @@
         {
           "repo": "amplifier-app-cli",
           "path": "amplifier_app_cli/main.py",
+          "type": "python",
           "exists": true,
-          "hash": "f85376256aea0098"
+          "hash": "504c9ef12c44b99c"
         },
         {
           "repo": "amplifier-app-cli",
           "path": "docs/AGENT_DELEGATION_IMPLEMENTATION.md",
+          "type": "markdown",
           "exists": true,
           "hash": "a14bb129bde300f4"
         }

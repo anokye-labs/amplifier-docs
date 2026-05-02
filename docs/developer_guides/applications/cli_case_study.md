@@ -125,22 +125,16 @@ class BundleManager:
 
 **Challenge:** Modules need to be downloaded from git, cached locally, and resolved by ID.
 
-**Solution:** Use amplifier-foundation's `SimpleSourceResolver` mounted before session init.
+**Solution:** Use amplifier-foundation's bundle preparation. `Bundle.prepare()` returns a `PreparedBundle` whose `create_session()` mounts a `module-source-resolver` capability internally before initializing the session.
 
 ```python
-from amplifier_foundation import SimpleSourceResolver
-from pathlib import Path
+from amplifier_foundation import load_bundle
 
-# Create resolver with cache directory
-resolver = SimpleSourceResolver(
-    cache_dir=Path.home() / ".amplifier" / "modules"
-)
+bundle = await load_bundle("git+https://github.com/microsoft/amplifier-foundation@main")
+prepared = await bundle.prepare()
 
-# Mount resolver BEFORE session initialization
-await session.coordinator.mount("source-resolver", resolver)
-
-# Now session.initialize() can resolve module sources
-await session.initialize()
+async with await prepared.create_session() as session:
+    response = await session.execute("Hello!")
 ```
 
 **Module source hints** come from bundle config:
@@ -156,37 +150,54 @@ tools:
 **Pattern: `session_runner.py`**
 
 ```python
+from dataclasses import dataclass, field
+from pathlib import Path
+
 from amplifier_core import AmplifierSession
-from dataclasses import dataclass
+from amplifier_foundation.bundle import PreparedBundle
+
 
 @dataclass
 class SessionConfig:
-    """Configuration for creating a session."""
-    mount_plan: dict
-    session_id: str | None = None
-    parent_id: str | None = None
-    is_resumed: bool = False
+    """All parameters needed to create and initialize a session."""
 
-async def create_initialized_session(config: SessionConfig) -> AmplifierSession:
-    """Create and initialize a session."""
-    
-    # Create session
-    session = AmplifierSession(
-        config=config.mount_plan,
+    # Required configuration
+    config: dict
+    search_paths: list[Path]
+    verbose: bool
+
+    # Session identity
+    session_id: str | None = None  # None = generate new UUID
+    bundle_name: str = "unknown"
+
+    # Resume mode (if provided, this is a resume)
+    initial_transcript: list[dict] | None = None
+
+    # Bundle mode (required)
+    prepared_bundle: PreparedBundle | None = None
+
+    # Execution mode
+    output_format: str = "text"  # text | json | json-trace
+
+
+async def create_initialized_session(
+    config: SessionConfig,
+    console,
+):
+    """Create and initialize a session via the prepared bundle.
+
+    The prepared bundle's ``create_session()`` method handles wiring
+    the module-source-resolver, registering the system prompt factory,
+    and initializing the session.
+    """
+    prepared_bundle = config.prepared_bundle
+    assert prepared_bundle is not None
+
+    session = await prepared_bundle.create_session(
         session_id=config.session_id,
-        parent_id=config.parent_id,
-        is_resumed=config.is_resumed,
+        session_cwd=Path.cwd(),
+        is_resumed=config.initial_transcript is not None,
     )
-    
-    # Mount module source resolver (app responsibility)
-    resolver = SimpleSourceResolver(
-        cache_dir=Path.home() / ".amplifier" / "modules"
-    )
-    await session.coordinator.mount("source-resolver", resolver)
-    
-    # Initialize (loads orchestrator, context, providers, tools, hooks)
-    await session.initialize()
-    
     return session
 ```
 
@@ -233,64 +244,62 @@ class DisplaySystem:
 
 **Solution: Session Spawning (session_spawner.py)**
 
-The CLI implements agent delegation using amplifier-foundation's agent system and amplifier-core's session forking.
+The CLI implements agent delegation by registering `session.spawn` and `session.resume` capabilities on the coordinator. Tool modules (e.g., `tool-task`) call these capabilities, which delegate to `spawn_sub_session()` and `resume_sub_session()` in `session_spawner.py`.
 
-#### Agent Resolution
+#### CLI-Specific Search Paths for Agents
 
-**CLI-specific search paths** (first-match-wins):
+**First-match-wins resolution** (highest → lowest priority):
 
 1. **Environment Variables** - `AMPLIFIER_AGENT_<NAME>=~/test-agent.md` (for testing)
 2. **User Directory** - `~/.amplifier/agents/zen-architect.md` (personal overrides)
 3. **Project Directory** - `.amplifier/agents/project-reviewer.md` (project-specific)
 4. **Bundle Agents** - Agents bundled with loaded bundles
 
-```python
-from amplifier_foundation import AgentResolver, AgentLoader
-import os
+**Environment variable format**: `AMPLIFIER_AGENT_<NAME>` (uppercase, dashes → underscores)
 
-# Build search paths
-search_paths = [
-    Path(".amplifier/agents"),              # Project
-    Path.home() / ".amplifier" / "agents",  # User
-]
-
-# Create resolver
-resolver = AgentResolver(search_paths=search_paths)
-
-# Check environment variable override first
-agent_name = "zen-architect"
-env_var = f"AMPLIFIER_AGENT_{agent_name.upper().replace('-', '_')}"
-agent_path = os.environ.get(env_var)
-
-if not agent_path:
-    # Fall back to resolver
-    agent_path = resolver.resolve(agent_name)
-
-# Load agent
-loader = AgentLoader(resolver=resolver)
-agent = loader.load_agent(agent_name)
+```bash
+# Testing agent changes
+export AMPLIFIER_AGENT_ZEN_ARCHITECT=~/test-zen.md
+amplifier run "design system"  # Uses test version
 ```
 
-#### Session Forking
+#### Session Spawning Capability
 
-Uses amplifier-core's `session.fork()` for sub-session creation:
+`register_session_spawning()` exposes spawn/resume to tools via the coordinator:
 
 ```python
-# In parent session
-parent_session = AmplifierSession(config=parent_mount_plan)
+# In session_runner.py
+def register_session_spawning(session: AmplifierSession) -> None:
+    from .session_spawner import resume_sub_session, spawn_sub_session
 
-# Load agent config
-agent = agent_loader.load_agent("zen-architect")
-agent_mount_plan_fragment = agent.to_mount_plan_fragment()
+    async def spawn_capability(
+        agent_name: str,
+        instruction: str,
+        parent_session: AmplifierSession,
+        agent_configs: dict[str, dict],
+        sub_session_id: str | None = None,
+        tool_inheritance: dict[str, list[str]] | None = None,
+        hook_inheritance: dict[str, list[str]] | None = None,
+        orchestrator_config: dict | None = None,
+        parent_messages: list[dict] | None = None,
+        provider_preferences: list | None = None,
+        self_delegation_depth: int = 0,
+        session_metadata: dict | None = None,
+        use_subprocess: bool = False,
+    ) -> dict:
+        return await spawn_sub_session(
+            agent_name=agent_name,
+            instruction=instruction,
+            parent_session=parent_session,
+            agent_configs=agent_configs,
+            # ... other args
+        )
 
-# Fork session with agent overlay
-sub_session = await parent_session.fork(
-    config_overlay=agent_mount_plan_fragment,
-    task_description="Design authentication system"
-)
+    async def resume_capability(sub_session_id: str, instruction: str) -> dict:
+        return await resume_sub_session(sub_session_id=sub_session_id, instruction=instruction)
 
-# Execute in sub-session
-result = await sub_session.execute("Design the auth system")
+    session.coordinator.register_capability("session.spawn", spawn_capability)
+    session.coordinator.register_capability("session.resume", resume_capability)
 ```
 
 #### Spawn Tool Policy
@@ -306,6 +315,8 @@ tools:
 
 spawn:
   exclude_tools: [tool-task]  # But agents can't delegate further
+  # OR
+  tools: [tool-a, tool-b]     # Agents get ONLY these tools
 ```
 
 **Default behavior:** If no `spawn` section, agents inherit all parent tools.
@@ -494,7 +505,7 @@ Users don't edit YAML files - they compose bundles:
 vim ~/.amplifier/config.yaml
 
 # This
-amplifier provider use anthropic
+amplifier provider add anthropic
 # → Composes provider bundle with foundation
 ```
 

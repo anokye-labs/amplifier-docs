@@ -128,21 +128,33 @@ amplifier session cleanup [OPTIONS]
 
 | Option | Description |
 |--------|-------------|
-| `--days` | Delete sessions older than N days (default: 30) |
-| `--dry-run` | Show what would be deleted without deleting |
+| `--days, -d` | Delete sessions older than N days (default: 30) |
+| `--force, -f` | Skip confirmation |
 
-### `session export`
+### `session delete`
 
-Export a session transcript.
+Delete a session.
 
 ```bash
-amplifier session export SESSION_ID [OPTIONS]
+amplifier session delete SESSION_ID [OPTIONS]
 ```
 
 | Option | Description |
 |--------|-------------|
-| `--format` | Export format: `json`, `markdown` (default: json) |
-| `--output, -o` | Output file path |
+| `--force, -f` | Skip confirmation |
+
+### `session fork`
+
+Fork a session at a specific turn.
+
+```bash
+amplifier session fork SESSION_ID [OPTIONS]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--name, -n` | Custom name/ID for forked session |
+| `--no-events` | Skip copying events.jsonl |
 
 ## Configuration
 
@@ -219,34 +231,6 @@ amplifier provider show anthropic
 amplifier provider use openai
 ```
 
-### `config`
-
-Manage configuration settings.
-
-```bash
-amplifier config SUBCOMMAND KEY [VALUE]
-```
-
-**Subcommands:**
-
-- `get KEY` - Get a configuration value
-- `set KEY VALUE` - Set a configuration value
-- `unset KEY` - Remove a configuration value
-- `list` - List all configuration values
-
-**Examples:**
-
-```bash
-# Get a value
-amplifier config get bundle.active
-
-# Set a value
-amplifier config set bundle.active dev
-
-# List all config
-amplifier config list
-```
-
 ## Module Management
 
 ### `module`
@@ -294,48 +278,19 @@ amplifier source SUBCOMMAND [OPTIONS]
 
 ## Agent Management
 
-### `agent`
+### `agents`
 
 Manage agents.
 
 ```bash
-amplifier agent SUBCOMMAND [OPTIONS]
+amplifier agents SUBCOMMAND [OPTIONS]
 ```
 
 **Subcommands:**
 
-- `list` - List available agents
-- `show AGENT` - Show agent details
-
-## Mode Management
-
-### `mode`
-
-Manage runtime modes.
-
-```bash
-amplifier mode SUBCOMMAND [OPTIONS]
-```
-
-**Subcommands:**
-
-- `list` - List available modes
-- `current` - Show active mode
-- `set MODE` - Activate a mode
-- `clear` - Deactivate current mode
-
-**Examples:**
-
-```bash
-# List modes
-amplifier mode list
-
-# Activate a mode
-amplifier mode set brainstorm-mode
-
-# Clear active mode
-amplifier mode clear
-```
+- `list` - List available agents (option: `--bundle, -b`)
+- `show NAME` - Show details for an agent
+- `dirs` - Show agent search directories
 
 ## Interactive Mode Commands
 
@@ -343,17 +298,21 @@ When running in interactive mode (`amplifier` or `amplifier run --mode chat`), t
 
 | Command | Description |
 |---------|-------------|
-| `/help` | Show help |
-| `/exit`, `/quit` | Exit interactive mode |
-| `/clear` | Clear the screen |
-| `/history` | Show conversation history |
-| `/session` | Show current session info |
-| `/bundle` | Show current bundle |
-| `/provider` | Show current provider |
-| `/model` | Show current model |
+| `/mode` | Set or toggle a mode (e.g., /mode plan) |
+| `/modes` | List available modes |
+| `/save` | Save conversation transcript |
+| `/status` | Show session status |
+| `/clear` | Clear conversation context |
+| `/help` | Show available commands |
+| `/config` | Live session config — /config [category] [disable\|enable name] |
+| `/tools` | List available tools |
 | `/agents` | List available agents |
 | `/allowed-dirs` | Manage allowed write directories |
 | `/denied-dirs` | Manage denied write directories |
+| `/rename` | Rename current session |
+| `/fork` | Fork session at turn N: /fork [turn] |
+| `/skills` | List available skills |
+| `/skill` | Load a skill (e.g., /skill simplify) |
 | `@AGENT prompt` | Invoke a named agent |
 
 **Examples:**
@@ -361,16 +320,14 @@ When running in interactive mode (`amplifier` or `amplifier run --mode chat`), t
 ```bash
 amplifier
 amplifier> @explorer What is the architecture of this project?
-amplifier> /history
-amplifier> /exit
+amplifier> /status
+amplifier> /help
 ```
 
 ## Environment Variables
 
 | Variable | Description |
 |----------|-------------|
-| `AMPLIFIER_HOME` | Base directory for Amplifier data (default: ~/.amplifier) |
-| `AMPLIFIER_AGENT_<NAME>` | Override agent file path for testing (e.g., AMPLIFIER_AGENT_ZEN_ARCHITECT) |
 | `ANTHROPIC_API_KEY` | Anthropic API key |
 | `OPENAI_API_KEY` | OpenAI API key |
 | `AZURE_OPENAI_API_KEY` | Azure OpenAI API key |

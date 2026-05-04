@@ -80,7 +80,7 @@
           "repo": "amplifier-app-cli",
           "path": "amplifier_app_cli/main.py",
           "exists": true,
-          "hash": "f85376256aea0098"
+          "hash": "504c9ef12c44b99c"
         },
         {
           "repo": "amplifier-app-cli",
@@ -390,7 +390,7 @@
           "repo": "amplifier-core",
           "path": "docs/contracts/TOOL_CONTRACT.md",
           "exists": true,
-          "hash": "6427f074050d6cbb"
+          "hash": "2424c7437780ac60"
         }
       ]
     },
@@ -446,7 +446,7 @@
           "repo": "amplifier-app-cli",
           "path": "amplifier_app_cli/main.py",
           "exists": true,
-          "hash": "f85376256aea0098"
+          "hash": "504c9ef12c44b99c"
         },
         {
           "repo": "amplifier-app-cli",

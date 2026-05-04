@@ -273,24 +273,20 @@ agent = loader.load_agent(agent_name)
 
 #### Session Forking
 
-Uses amplifier-core's `session.fork()` for sub-session creation:
+Sub-session creation is handled via `PreparedBundle.spawn()` in amplifier-foundation, which composes the agent bundle with the parent and creates a child session linked via `parent_id`:
 
 ```python
-# In parent session
-parent_session = AmplifierSession(config=parent_mount_plan)
+# Parent session is already running
+# child_bundle is the resolved agent bundle
 
-# Load agent config
-agent = agent_loader.load_agent("zen-architect")
-agent_mount_plan_fragment = agent.to_mount_plan_fragment()
-
-# Fork session with agent overlay
-sub_session = await parent_session.fork(
-    config_overlay=agent_mount_plan_fragment,
-    task_description="Design authentication system"
+result = await prepared.spawn(
+    child_bundle,
+    "Design the auth system",
+    parent_session=parent_session,  # For lineage tracking
+    compose=True,                    # Compose child with parent bundle
 )
 
-# Execute in sub-session
-result = await sub_session.execute("Design the auth system")
+# result is a dict with: output, session_id, status, turn_count, metadata
 ```
 
 #### Spawn Tool Policy
@@ -312,7 +308,9 @@ spawn:
 
 #### Multi-Turn Sub-Session Resumption
 
-Sub-sessions support multi-turn conversations through automatic state persistence:
+Sub-sessions support multi-turn conversations through automatic state persistence. When a sub-session completes, its state (transcript and configuration) is saved to persistent storage, enabling the parent session to resume the conversation across multiple turns.
+
+**State Persistence:**
 
 ```python
 # After sub-session execution, before cleanup
@@ -335,6 +333,90 @@ metadata = {
 store = SessionStore()  # ~/.amplifier/projects/{project}/sessions/
 store.save(sub_session_id, transcript, metadata)
 ```
+
+**Resuming Existing Sessions:**
+
+Sub-sessions can be resumed for multi-turn conversations using the task tool:
+
+```python
+# Turn 1: Spawn new sub-session (agent parameter required)
+result = await task_tool.execute({
+    "agent": "zen-architect",
+    "instruction": "Design a caching system"
+})
+session_id = result["session_id"]  # Save for later
+
+# Turn 2: Resume the same sub-session (session_id parameter triggers resume)
+result = await task_tool.execute({
+    "session_id": session_id,
+    "instruction": "Add TTL support to the cache"
+})
+
+# Turn 3: Continue iteration
+result = await task_tool.execute({
+    "session_id": session_id,
+    "instruction": "Add eviction policies"
+})
+
+# Each turn builds on previous context
+```
+
+**Resume Process:**
+1. Load transcript and metadata from `SessionStore`
+2. Recreate `AmplifierSession` with stored configuration
+3. Restore transcript to context via `add_message()`
+4. Execute new instruction with full conversation history
+5. Save updated state
+
+**Task Tool Integration:**
+
+The task tool provides a unified interface for both spawning new sub-sessions and resuming existing ones:
+
+```python
+# Spawn new sub-session (agent parameter required)
+result = tool_execute({
+    "agent": "zen-architect",
+    "instruction": "Design authentication system"
+})
+# Returns: {"response": str, "session_id": "parent-123-zen-architect-abc456"}
+
+# Resume existing sub-session (session_id parameter triggers resume)
+result = tool_execute({
+    "session_id": "parent-123-zen-architect-abc456",
+    "instruction": "Add OAuth 2.0 support"
+})
+# Returns: {"response": str, "session_id": "parent-123-zen-architect-abc456"}
+```
+
+**Input Schema:**
+```python
+{
+    "agent": str,          # Optional - required for spawn, not needed for resume
+    "instruction": str,     # Required - task for agent to execute
+    "session_id": str,     # Optional - when provided, triggers resume instead of spawn
+    "model_role": str,     # Optional - semantic role override (e.g., "coding", "fast")
+    "provider_preferences": list,  # Optional - ordered fallback chain for provider/model
+}
+```
+
+**Routing Logic:** If `session_id` provided → resume, else → spawn
+
+**Provider Preferences:**
+
+Control which provider/model a spawned agent uses:
+
+```python
+result = await task_tool.execute({
+    "agent": "foundation:explorer",
+    "instruction": "Quick analysis",
+    "provider_preferences": [
+        {"provider": "anthropic", "model": "claude-haiku-*"},
+        {"provider": "openai", "model": "gpt-4o-mini"},
+    ]
+})
+```
+
+System tries each preference in order until finding an available provider. Model names support glob patterns.
 
 ### 7. Session Storage
 
@@ -494,7 +576,7 @@ Users don't edit YAML files - they compose bundles:
 vim ~/.amplifier/config.yaml
 
 # This
-amplifier provider use anthropic
+amplifier provider add anthropic
 # → Composes provider bundle with foundation
 ```
 

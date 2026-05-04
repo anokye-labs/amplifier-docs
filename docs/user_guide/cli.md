@@ -118,6 +118,30 @@ Resume a specific session.
 amplifier session resume SESSION_ID [PROMPT]
 ```
 
+### `session delete`
+
+Delete a session.
+
+```bash
+amplifier session delete SESSION_ID [OPTIONS]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--force, -f` | Skip confirmation prompt |
+
+### `session fork`
+
+Fork a session at a specific turn.
+
+```bash
+amplifier session fork SESSION_ID [OPTIONS]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--turn` | Turn number to fork at (default: latest) |
+
 ### `session cleanup`
 
 Clean up old sessions.
@@ -130,19 +154,6 @@ amplifier session cleanup [OPTIONS]
 |--------|-------------|
 | `--days` | Delete sessions older than N days (default: 30) |
 | `--dry-run` | Show what would be deleted without deleting |
-
-### `session export`
-
-Export a session transcript.
-
-```bash
-amplifier session export SESSION_ID [OPTIONS]
-```
-
-| Option | Description |
-|--------|-------------|
-| `--format` | Export format: `json`, `markdown` (default: json) |
-| `--output, -o` | Output file path |
 
 ## Configuration
 
@@ -171,8 +182,10 @@ amplifier bundle SUBCOMMAND [OPTIONS]
 - `list` - List registered bundles
 - `show BUNDLE` - Show bundle details
 - `use BUNDLE` - Set active bundle for this project
+- `current` - Show the currently active bundle
 - `add URI` - Register a new bundle
 - `remove BUNDLE` - Unregister a bundle
+- `clear` - Clear active bundle setting
 - `update BUNDLE` - Update bundle to latest version
 
 **Examples:**
@@ -186,6 +199,9 @@ amplifier bundle show foundation
 
 # Set active bundle
 amplifier bundle use dev
+
+# Show current bundle
+amplifier bundle current
 
 # Add a new bundle
 amplifier bundle add git+https://github.com/org/my-bundle@main
@@ -202,9 +218,13 @@ amplifier provider SUBCOMMAND [OPTIONS]
 **Subcommands:**
 
 - `list` - List available providers
-- `show PROVIDER` - Show provider details
-- `use PROVIDER` - Set active provider for this project
-- `add URI` - Register a new provider module
+- `add` - Add a new provider
+- `remove PROVIDER` - Remove a provider
+- `edit PROVIDER` - Edit provider configuration
+- `test PROVIDER` - Test provider connection
+- `models PROVIDER` - List available models for a provider
+- `install PROVIDER_TYPE` - Install a provider module
+- `manage` - Interactive provider management
 
 **Examples:**
 
@@ -212,39 +232,14 @@ amplifier provider SUBCOMMAND [OPTIONS]
 # List providers
 amplifier provider list
 
-# Show provider details
-amplifier provider show anthropic
+# Add a provider
+amplifier provider add
 
-# Set active provider
-amplifier provider use openai
-```
+# Test provider connection
+amplifier provider test anthropic
 
-### `config`
-
-Manage configuration settings.
-
-```bash
-amplifier config SUBCOMMAND KEY [VALUE]
-```
-
-**Subcommands:**
-
-- `get KEY` - Get a configuration value
-- `set KEY VALUE` - Set a configuration value
-- `unset KEY` - Remove a configuration value
-- `list` - List all configuration values
-
-**Examples:**
-
-```bash
-# Get a value
-amplifier config get bundle.active
-
-# Set a value
-amplifier config set bundle.active dev
-
-# List all config
-amplifier config list
+# List models
+amplifier provider models openai
 ```
 
 ## Module Management
@@ -261,9 +256,11 @@ amplifier module SUBCOMMAND [OPTIONS]
 
 - `list` - List installed modules
 - `show MODULE` - Show module details
-- `add URI` - Install a module
+- `add MODULE_ID` - Install a module
 - `remove MODULE` - Uninstall a module
 - `update MODULE` - Update module to latest version
+- `validate MODULE` - Validate a module
+- `current` - Show current module context
 
 ### `tool`
 
@@ -276,7 +273,8 @@ amplifier tool SUBCOMMAND [OPTIONS]
 **Subcommands:**
 
 - `list` - List available tools
-- `show TOOL` - Show tool details
+- `info TOOL` - Show tool details
+- `invoke TOOL [ARGS]` - Invoke a tool directly
 
 ### `source`
 
@@ -291,51 +289,71 @@ amplifier source SUBCOMMAND [OPTIONS]
 - `list` - List registered sources
 - `add URI` - Add a source
 - `remove URI` - Remove a source
+- `show SOURCE` - Show source details
 
 ## Agent Management
 
-### `agent`
+### `agents`
 
 Manage agents.
 
 ```bash
-amplifier agent SUBCOMMAND [OPTIONS]
+amplifier agents SUBCOMMAND [OPTIONS]
 ```
 
 **Subcommands:**
 
 - `list` - List available agents
 - `show AGENT` - Show agent details
+- `dirs` - Show agent search directories
 
-## Mode Management
+## Routing Management
 
-### `mode`
+### `routing`
 
-Manage runtime modes.
+Manage LLM routing configurations.
 
 ```bash
-amplifier mode SUBCOMMAND [OPTIONS]
+amplifier routing SUBCOMMAND [OPTIONS]
 ```
 
 **Subcommands:**
 
-- `list` - List available modes
-- `current` - Show active mode
-- `set MODE` - Activate a mode
-- `clear` - Deactivate current mode
+- `list` - List available routing matrices
+- `use MATRIX` - Set active routing matrix
+- `show MATRIX` - Show routing matrix details
+- `manage` - Interactive routing management
+- `create` - Create a new routing matrix
 
 **Examples:**
 
 ```bash
-# List modes
-amplifier mode list
+# List available routing matrices
+amplifier routing list
 
-# Activate a mode
-amplifier mode set brainstorm-mode
+# Set active routing
+amplifier routing use balanced
 
-# Clear active mode
-amplifier mode clear
+# Show matrix details
+amplifier routing show balanced
 ```
+
+## Notification Management
+
+### `notify`
+
+Manage notifications.
+
+```bash
+amplifier notify SUBCOMMAND [OPTIONS]
+```
+
+**Subcommands:**
+
+- `status` - Show notification status
+- `desktop` - Configure desktop notifications
+- `ntfy` - Configure ntfy.sh notifications
+- `reset` - Reset notification settings
 
 ## Interactive Mode Commands
 
@@ -354,6 +372,16 @@ When running in interactive mode (`amplifier` or `amplifier run --mode chat`), t
 | `/agents` | List available agents |
 | `/allowed-dirs` | Manage allowed write directories |
 | `/denied-dirs` | Manage denied write directories |
+| `/mode` | Set or toggle a mode |
+| `/modes` | List available modes |
+| `/config` | Show or manage session configuration |
+| `/tools` | List available tools |
+| `/skills` | List available skills |
+| `/skill` | Load a skill |
+| `/status` | Show session status |
+| `/save` | Save conversation transcript |
+| `/rename` | Rename current session |
+| `/fork` | Fork session at a turn |
 | `@AGENT prompt` | Invoke a named agent |
 
 **Examples:**
@@ -361,7 +389,8 @@ When running in interactive mode (`amplifier` or `amplifier run --mode chat`), t
 ```bash
 amplifier
 amplifier> @explorer What is the architecture of this project?
-amplifier> /history
+amplifier> /modes
+amplifier> /mode brainstorm
 amplifier> /exit
 ```
 
@@ -392,7 +421,7 @@ Supported shells: bash, zsh, fish
 ## Exit Codes
 
 | Code | Meaning |
-|------|---------|
+|------|---------
 | 0 | Success |
 | 1 | General error |
 | 2 | Invalid configuration |
@@ -427,7 +456,7 @@ amplifier continue  # Resumes most recent session in THIS project
 amplifier run --provider anthropic --model claude-opus-4-6 "prompt"
 
 # Set default for project
-amplifier provider use openai
+amplifier provider add openai
 ```
 
 ### Agent Invocation

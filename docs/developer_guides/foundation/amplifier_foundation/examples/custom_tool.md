@@ -28,10 +28,10 @@ cd amplifier-foundation
 export ANTHROPIC_API_KEY='your-key-here'
 
 # Run the example
-uv run python examples/07_custom_tool.py
+uv run python examples/03_custom_tool.py
 ```
 
-[:material-github: View Full Source Code](https://github.com/microsoft/amplifier-foundation/blob/main/examples/07_custom_tool.py){ .md-button }
+[:material-github: View Full Source Code](https://github.com/microsoft/amplifier-foundation/blob/main/examples/03_custom_tool.py){ .md-button }
 
 ## How It Works
 
@@ -83,7 +83,10 @@ class WeatherTool:
     
     @property
     def description(self) -> str:
-        return "Get current weather for a location"
+        return """Get current weather for a location.
+
+Input: {"location": "city name or zip code"}
+Returns: Weather information including temperature, conditions, and forecast."""
     
     @property
     def input_schema(self) -> dict:
@@ -101,17 +104,28 @@ class WeatherTool:
     async def execute(self, input: dict) -> ToolResult:
         location = input.get("location", "")
         
-        # Your implementation here - could call a weather API
-        weather_data = {
-            "temperature": "72°F",
+        if not location:
+            return ToolResult(success=False, error={"message": "No location provided"})
+        
+        # In a real tool, you'd call a weather API here
+        # For demo, we'll return mock data
+        mock_weather = {
+            "location": location,
+            "temperature": "72°F (22°C)",
             "conditions": "Partly cloudy",
-            "humidity": "65%"
+            "humidity": "65%",
+            "wind": "10 mph NW",
+            "forecast": "Clear skies expected through the evening",
         }
         
-        return ToolResult(
-            success=True,
-            output=f"Weather for {location}: {weather_data['temperature']}, {weather_data['conditions']}"
-        )
+        result_text = f"""Weather for {location}:
+Temperature: {mock_weather["temperature"]}
+Conditions: {mock_weather["conditions"]}
+Humidity: {mock_weather["humidity"]}
+Wind: {mock_weather["wind"]}
+Forecast: {mock_weather["forecast"]}"""
+        
+        return ToolResult(success=True, output=result_text)
 ```
 
 **Key points**:
@@ -129,46 +143,72 @@ class DatabaseTool:
     
     @property
     def description(self) -> str:
-        return "Query the application database"
+        return """Query the application database.
+
+Input: {"query": "SQL query", "params": [optional list of params]}
+Returns: Query results as JSON."""
     
     @property
     def input_schema(self) -> dict:
         return {
             "type": "object",
             "properties": {
-                "query": {"type": "string", "description": "SQL query"},
-                "params": {"type": "array", "items": {"type": "string"}}
+                "query": {"type": "string", "description": "SQL query to execute"},
+                "params": {"type": "array", "description": "Optional query parameters", "items": {"type": "string"}},
             },
             "required": ["query"]
         }
     
     async def execute(self, input: dict) -> ToolResult:
-        query = input.get("query")
+        query = input.get("query", "")
         
-        # In production: use asyncpg, SQLAlchemy, etc.
-        # For demo: return mock data
-        results = [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}]
+        if not query:
+            return ToolResult(success=False, error={"message": "No query provided"})
         
-        return ToolResult(success=True, output=results)
+        # Mock results for demo
+        # In real tool, you'd use asyncpg, SQLAlchemy, etc.
+        if "users" in query.lower():
+            result = [
+                {"id": 1, "name": "Alice", "email": "alice@example.com"},
+                {"id": 2, "name": "Bob", "email": "bob@example.com"},
+            ]
+            return ToolResult(success=True, output=result)
+        
+        return ToolResult(success=True, output=f"Query executed: {query}")
 ```
 
 This demonstrates how to build **domain-specific tools** for your application.
 
 ## Registering Custom Tools
 
-After creating a session, register your tools:
+After creating a session, register your tools using a mount function:
 
 ```python
-# Create session
+async def mount_custom_tools(coordinator, config: dict):
+    """Mount function that registers your custom tools.
+    
+    This is the bridge between your tool and Amplifier's module system.
+    The coordinator provides the registration API.
+    """
+    # Create instances of your tools
+    weather = WeatherTool()
+    database = DatabaseTool()
+    
+    # Register them with the coordinator
+    await coordinator.mount("tools", weather, name=weather.name)
+    await coordinator.mount("tools", database, name=database.name)
+    
+    # Optional: Return cleanup function
+    async def cleanup():
+        # Close connections, release resources, etc.
+        # In a real app: close DB connections, release file handles, etc.
+        pass
+    
+    return cleanup
+
+# Usage in your main code
 session = await prepared.create_session()
-
-# Create tool instances
-weather = WeatherTool()
-database = DatabaseTool()
-
-# Register with coordinator
-await session.coordinator.mount("tools", weather, name=weather.name)
-await session.coordinator.mount("tools", database, name=database.name)
+await mount_custom_tools(session.coordinator, {})
 
 # Now use the session
 async with session:
@@ -202,16 +242,18 @@ The LLM uses:
 
 [Test 1: Weather Tool]
 📝 Asking about weather...
-✓ Response: Based on the weather tool, San Francisco currently has:
-- Temperature: 72°F
-- Conditions: Partly cloudy
-- Humidity: 65%
+✓ Response: Weather for San Francisco:
+Temperature: 72°F (22°C)
+Conditions: Partly cloudy
+Humidity: 65%
+Wind: 10 mph NW
+Forecast: Clear skies expected through the evening
 
 [Test 2: Database Tool]
 📝 Asking about database...
-✓ Response: I queried the users table and found:
-- Alice (ID: 1)
-- Bob (ID: 2)
+✓ Response: Query results retrieved:
+- Alice (ID: 1, alice@example.com)
+- Bob (ID: 2, bob@example.com)
 
 [Test 3: Multi-tool Usage]
 📝 Using multiple tools together...
